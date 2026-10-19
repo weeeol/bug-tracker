@@ -1,10 +1,18 @@
+"use client";
+
+import { useActionState } from "react";
+import { signIn, type AuthState } from "@/app/auth/actions";
+
+const initialState: AuthState = {};
+
 export function SignInForm() {
+  const [state, formAction, pending] = useActionState(signIn, initialState);
+
   return (
-    <form className="space-y-5" aria-describedby="sign-in-preview-note">
-      <p id="sign-in-preview-note" className="text-sm text-slate-400">
-        Authentication will be connected in a later task. This preview does
-        not submit credentials.
-      </p>
+    <form className="space-y-5" action={formAction}>
+      <div aria-live="polite" className="text-sm">
+        {state.error ? <p className="text-rose-300">{state.error}</p> : null}
+      </div>
       <div>
         <label className="block text-sm font-medium text-slate-200" htmlFor="email">
           Email address
@@ -16,6 +24,7 @@ export function SignInForm() {
           placeholder="you@example.com"
           type="email"
           autoComplete="email"
+          required
         />
       </div>
       <div>
@@ -28,14 +37,15 @@ export function SignInForm() {
           name="password"
           type="password"
           autoComplete="current-password"
+          required
         />
       </div>
       <button
         className="w-full rounded-md bg-sky-400 px-4 py-2.5 font-semibold text-slate-950 hover:bg-sky-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
-        type="button"
-        aria-describedby="sign-in-preview-note"
+        type="submit"
+        disabled={pending}
       >
-        Sign-in preview
+        {pending ? "Signing in..." : "Sign in"}
       </button>
     </form>
   );

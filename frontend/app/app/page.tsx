@@ -1,7 +1,18 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { StatePanel } from "@/components/state-panel";
+import { getServerSupabaseClient } from "@/lib/supabase/server";
 
-export default function WorkspacePage() {
+export default async function WorkspacePage() {
+  const supabase = await getServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/auth/sign-in?next=/app");
+  }
+
   return (
     <div className="mx-auto max-w-4xl px-6 py-16">
       <p className="text-sm font-medium uppercase tracking-[0.2em] text-sky-300">

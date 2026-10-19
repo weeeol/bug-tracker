@@ -1,21 +1,24 @@
 import Link from "next/link";
-import { StatePanel } from "@/components/state-panel";
+import { SignUpForm } from "@/components/sign-up-form";
 
 export default function SignUpPage() {
   return (
-    <div className="mx-auto max-w-xl px-6 py-16">
-      <StatePanel title="Account creation is coming next">
-        <p>
-          The authentication flow is intentionally not connected in the shell
-          task. Return to the sign-in preview to explore the public entry.
+    <div className="mx-auto max-w-md px-6 py-16">
+      <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl shadow-slate-950/30">
+        <p className="text-sm font-medium uppercase tracking-[0.2em] text-sky-300">
+          Get started
         </p>
-        <Link
-          className="mt-5 inline-block rounded-md bg-sky-400 px-4 py-2 font-semibold text-slate-950 hover:bg-sky-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-          href="/auth/sign-in"
-        >
-          Back to sign in
-        </Link>
-      </StatePanel>
+        <h1 className="mt-3 text-3xl font-semibold text-white">Create an account</h1>
+        <div className="mt-8">
+          <SignUpForm />
+        </div>
+        <p className="mt-6 text-center text-sm text-slate-400">
+          Already registered?{" "}
+          <Link className="text-sky-300 underline hover:text-sky-200" href="/auth/sign-in">
+            Sign in
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }
