@@ -1,0 +1,4 @@
+# Local Supabase CLI configuration.
+# This file intentionally does not identify or link a hosted project.
+
+project_id = "bug-tracker-local"

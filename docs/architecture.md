@@ -2,7 +2,9 @@
 
 ## Chosen baseline
 
-Use a single Next.js application with TypeScript. Supabase provides managed PostgreSQL, Auth, database migrations, Row Level Security (RLS), and optional Storage/Edge Functions. This avoids a separate custom API for the first release while preserving a PostgreSQL-first data model.
+Use a single Next.js application with TypeScript in `frontend/`. Supabase provides managed PostgreSQL, Auth, database migrations, Row Level Security (RLS), and optional Storage/Edge Functions. This avoids a separate custom API for the first release while preserving a PostgreSQL-first data model.
+
+The initial MVP has no standalone custom backend. Server Actions and Route Handlers live within `frontend/`; a top-level `backend/` directory is reserved for a future independently deployed service only when a separately justified requirement arises.
 
 ## Boundaries
 
@@ -50,7 +52,7 @@ RLS policies must be migration-managed and accompanied by policy tests. Never re
 
 ## Environment contract
 
-Commit `.env.example` with names only:
+Commit `frontend/.env.example` with names only:
 
 ```dotenv
 NEXT_PUBLIC_SUPABASE_URL=
@@ -62,7 +64,7 @@ Use separate Supabase projects for local/development, staging, and production. D
 
 ## Operational standards
 
-- Migrations are append-only after shared use; create a corrective migration instead of rewriting applied history.
+- Migrations under `database/supabase/migrations/` are append-only after shared use; create a corrective migration instead of rewriting applied history.
 - Use UTC timestamps and database defaults.
 - Log unexpected server failures with request context excluding secrets and personal data.
 - Create a seed path using fake data only.

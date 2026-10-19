@@ -18,11 +18,11 @@ If a task conflicts with these documents, pause and ask for a decision rather th
 ## Engineering constraints
 
 - Use TypeScript with strict type checking; do not introduce `any` to bypass types.
-- Treat Supabase as the backend platform. Use PostgreSQL migrations in `supabase/migrations/`; never make schema-only changes through the dashboard.
+- Treat Supabase as the backend platform. Use PostgreSQL migrations in `database/supabase/migrations/`; never make schema-only changes through the dashboard.
 - Enforce authorization in PostgreSQL Row Level Security. Client-side checks are for user experience, never the security boundary.
-- Keep server-only Supabase credentials out of browser bundles. Commit `.env.example`, never `.env*` containing real secrets.
+- Keep server-only Supabase credentials out of browser bundles. Commit `frontend/.env.example`, never `.env*` containing real secrets.
 - Validate external input at boundaries and return safe, actionable errors.
-- Keep root files limited to project entry points and configuration. Put explanatory material in `docs/`.
+- Keep the root limited to repository-level entry points and controls. Put explanatory material in `docs/`, the Next.js application in `frontend/`, and Supabase assets in `database/`.
 
 ## Verification
 
