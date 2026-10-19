@@ -1,9 +1,18 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { getSupabaseConfig } from "./config";
+import { getSupabaseConfig, isSupabaseConfigured } from "./config";
 
 export async function updateSupabaseSession(request: NextRequest) {
   let response = NextResponse.next({ request });
+
+  if (!isSupabaseConfigured()) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/auth/error";
+    redirectUrl.search = "";
+    redirectUrl.searchParams.set("reason", "not-configured");
+    return NextResponse.redirect(redirectUrl);
+  }
+
   const { url, publishableKey } = getSupabaseConfig();
   const supabase = createServerClient(url, publishableKey, {
     cookies: {
