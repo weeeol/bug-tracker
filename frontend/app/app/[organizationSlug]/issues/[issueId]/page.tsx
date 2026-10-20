@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { updateIssue } from "@/app/app/actions";
+import { addIssueComment, updateIssue } from "@/app/app/actions";
+import { CommentForm } from "@/components/comment-form";
 import { IssueForm } from "@/components/issue-form";
 import { StatePanel } from "@/components/state-panel";
 import { getServerSupabaseClient } from "@/lib/supabase/server";
@@ -12,11 +13,21 @@ export default async function IssuePage({
   const { organizationSlug, issueId } = await params;
   const supabase = await getServerSupabaseClient();
 
-  const { data: organization } = await supabase
+  const { data: organization, error: organizationError } = await supabase
     .from("organizations")
     .select("id, name")
     .eq("slug", organizationSlug)
     .maybeSingle();
+
+  if (organizationError) {
+    return (
+      <div className="mx-auto max-w-4xl px-6 py-16">
+        <StatePanel title="Could not load organization" tone="error">
+          We could not load this organization. Please try again.
+        </StatePanel>
+      </div>
+    );
+  }
 
   if (!organization) {
     return (
@@ -28,7 +39,7 @@ export default async function IssuePage({
     );
   }
 
-  const { data: issue } = await supabase
+  const { data: issue, error: issueError } = await supabase
     .from("issues")
     .select(
       "id, title, description, status, priority, assignee_id, reporter_id, project_id, organization_id, created_at, updated_at",
@@ -36,6 +47,16 @@ export default async function IssuePage({
     .eq("organization_id", organization.id)
     .eq("id", issueId)
     .maybeSingle();
+
+  if (issueError) {
+    return (
+      <div className="mx-auto max-w-4xl px-6 py-16">
+        <StatePanel title="Could not load issue" tone="error">
+          We could not load this issue. Please try again.
+        </StatePanel>
+      </div>
+    );
+  }
 
   if (!issue) {
     return (
@@ -47,12 +68,22 @@ export default async function IssuePage({
     );
   }
 
-  const { data: project } = await supabase
+  const { data: project, error: projectError } = await supabase
     .from("projects")
     .select("id, name, slug, archived_at")
     .eq("organization_id", organization.id)
     .eq("id", issue.project_id)
     .maybeSingle();
+
+  if (projectError) {
+    return (
+      <div className="mx-auto max-w-4xl px-6 py-16">
+        <StatePanel title="Could not load project" tone="error">
+          We could not load this issue&apos;s project. Please try again.
+        </StatePanel>
+      </div>
+    );
+  }
 
   if (!project) {
     return (
@@ -79,10 +110,28 @@ export default async function IssuePage({
     );
   }
 
-  const { data: memberships } = await supabase
+  const { data: memberships, error: membershipsError } = await supabase
     .from("organization_members")
     .select("profile_id, profiles(display_name)")
     .eq("organization_id", organization.id);
+
+  const { data: comments, error: commentsError } = await supabase
+    .from("issue_comments")
+    .select("id, body, author_id, created_at")
+    .eq("organization_id", organization.id)
+    .eq("issue_id", issue.id)
+    .order("created_at", { ascending: true })
+    .limit(50);
+
+  if (membershipsError) {
+    return (
+      <div className="mx-auto max-w-4xl px-6 py-16">
+        <StatePanel title="Could not load issue members" tone="error">
+          We could not load the issue participants. Please try again.
+        </StatePanel>
+      </div>
+    );
+  }
 
   const memberMap = new Map(
     (memberships ?? []).map((member) => {
@@ -163,6 +212,32 @@ export default async function IssuePage({
                 })}
                 submitLabel="Save issue"
               />
+            </div>
+          </div>
+
+          <div className="mt-8 border-t border-slate-800 pt-6">
+            <h3 className="text-lg font-semibold">Discussion</h3>
+            {commentsError ? (
+              <StatePanel title="Could not load comments" tone="error">
+                We could not load the discussion. Please try again.
+              </StatePanel>
+            ) : comments?.length ? (
+              <ol className="mt-4 space-y-4">
+                {comments.map((comment) => (
+                  <li key={comment.id} className="rounded-lg border border-slate-800 p-4">
+                    <p className="whitespace-pre-wrap text-sm text-slate-300">{comment.body}</p>
+                    <p className="mt-2 text-xs text-slate-400">
+                      {memberMap.get(comment.author_id) ?? comment.author_id} ·{" "}
+                      {new Date(comment.created_at).toLocaleString()}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="mt-4 text-sm text-slate-400">No comments yet.</p>
+            )}
+            <div className="mt-6">
+              <CommentForm action={addIssueComment.bind(null, organizationSlug, issue.id)} />
             </div>
           </div>
         </section>

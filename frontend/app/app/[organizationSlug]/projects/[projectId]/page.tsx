@@ -2,21 +2,36 @@ import Link from "next/link";
 import { createIssue } from "@/app/app/actions";
 import { IssueForm } from "@/components/issue-form";
 import { StatePanel } from "@/components/state-panel";
+import { ISSUE_PRIORITIES, ISSUE_STATUSES } from "@/lib/issue-validation";
+import { parseIssueFilters, buildIssueFilterQuery } from "@/lib/issue-filters";
 import { getServerSupabaseClient } from "@/lib/supabase/server";
 
 export default async function ProjectPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ organizationSlug: string; projectId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { organizationSlug, projectId } = await params;
+  const filters = parseIssueFilters(await searchParams);
   const supabase = await getServerSupabaseClient();
 
-  const { data: organization } = await supabase
+  const { data: organization, error: organizationError } = await supabase
     .from("organizations")
     .select("id, name")
     .eq("slug", organizationSlug)
     .maybeSingle();
+
+  if (organizationError) {
+    return (
+      <div className="mx-auto max-w-4xl px-6 py-16">
+        <StatePanel title="Could not load organization" tone="error">
+          We could not load this organization. Please try again.
+        </StatePanel>
+      </div>
+    );
+  }
 
   if (!organization) {
     return (
@@ -28,12 +43,22 @@ export default async function ProjectPage({
     );
   }
 
-  const { data: project } = await supabase
+  const { data: project, error: projectError } = await supabase
     .from("projects")
     .select("id, name, slug, archived_at")
     .eq("organization_id", organization.id)
     .eq("id", projectId)
     .maybeSingle();
+
+  if (projectError) {
+    return (
+      <div className="mx-auto max-w-4xl px-6 py-16">
+        <StatePanel title="Could not load project" tone="error">
+          We could not load this project. Please try again.
+        </StatePanel>
+      </div>
+    );
+  }
 
   if (!project) {
     return (
@@ -60,18 +85,36 @@ export default async function ProjectPage({
     );
   }
 
-  const [{ data: issues }, { data: members }] = await Promise.all([
-    supabase
+  const issueQuery = supabase
       .from("issues")
       .select("id, title, status, priority, updated_at, assignee_id")
       .eq("organization_id", organization.id)
       .eq("project_id", project.id)
-      .order("updated_at", { ascending: false }),
+      .order("updated_at", { ascending: false })
+      .range((filters.page - 1) * 50, filters.page * 50 - 1);
+  if (filters.status) issueQuery.eq("status", filters.status);
+  if (filters.priority) issueQuery.eq("priority", filters.priority);
+  if (filters.assigneeId) issueQuery.eq("assignee_id", filters.assigneeId);
+  if (filters.search) issueQuery.ilike("title", `%${filters.search}%`);
+
+  const [{ data: issues, error: issuesError }, { data: members, error: membersError }] =
+    await Promise.all([
+    issueQuery,
     supabase
       .from("organization_members")
       .select("profile_id, profiles(display_name)")
       .eq("organization_id", organization.id),
-  ]);
+    ]);
+
+  if (issuesError || membersError) {
+    return (
+      <div className="mx-auto max-w-4xl px-6 py-16">
+        <StatePanel title="Could not load issues" tone="error">
+          We could not load this project&apos;s issue queue. Please try again.
+        </StatePanel>
+      </div>
+    );
+  }
 
   const memberList = (members ?? []).map((member) => {
     const profile = Array.isArray(member.profiles)
@@ -93,6 +136,37 @@ export default async function ProjectPage({
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         <section className="rounded-xl border border-slate-800 bg-slate-900 p-6">
           <h2 className="text-xl font-semibold">Issue queue</h2>
+          <form method="get" className="mt-4 grid gap-3 rounded-lg border border-slate-800 p-4 md:grid-cols-2">
+            <label className="text-sm">
+              Search title
+              <input name="q" defaultValue={filters.search ?? ""} className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1" />
+            </label>
+            <label className="text-sm">
+              Status
+              <select name="status" defaultValue={filters.status ?? ""} className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1">
+                <option value="">Any status</option>
+                {ISSUE_STATUSES.map((status) => <option key={status} value={status}>{status.replace("_", " ")}</option>)}
+              </select>
+            </label>
+            <label className="text-sm">
+              Priority
+              <select name="priority" defaultValue={filters.priority ?? ""} className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1">
+                <option value="">Any priority</option>
+                {ISSUE_PRIORITIES.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
+              </select>
+            </label>
+            <label className="text-sm">
+              Assignee
+              <select name="assignee" defaultValue={filters.assigneeId ?? ""} className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1">
+                <option value="">Anyone</option>
+                {memberList.map((member) => <option key={member.profile_id} value={member.profile_id}>{member.display_name}</option>)}
+              </select>
+            </label>
+            <div className="flex gap-3 md:col-span-2">
+              <button type="submit" className="rounded bg-sky-400 px-3 py-1 font-semibold text-slate-950">Apply filters</button>
+              <Link href={`/app/${organizationSlug}/projects/${project.id}`} className="rounded border border-slate-700 px-3 py-1 text-sky-300">Clear</Link>
+            </div>
+          </form>
           {issues?.length ? (
             <ul className="mt-4 space-y-4">
               {issues.map((issue) => (
@@ -127,6 +201,14 @@ export default async function ProjectPage({
               </StatePanel>
             </div>
           )}
+          <nav aria-label="Issue pages" className="mt-6 flex justify-between text-sm">
+            {filters.page > 1 ? (
+              <Link href={`/app/${organizationSlug}/projects/${project.id}?${buildIssueFilterQuery({ ...filters, page: filters.page - 1 })}`}>Previous</Link>
+            ) : <span />}
+            {issues?.length === 50 ? (
+              <Link href={`/app/${organizationSlug}/projects/${project.id}?${buildIssueFilterQuery({ ...filters, page: filters.page + 1 })}`}>Next</Link>
+            ) : null}
+          </nav>
         </section>
 
         <section className="rounded-xl border border-slate-800 bg-slate-900 p-6">

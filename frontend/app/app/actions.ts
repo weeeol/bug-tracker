@@ -340,3 +340,64 @@ export async function updateIssue(
   revalidatePath(`/app/${organizationSlug}/projects/${projectId}`);
   return { message: "Issue updated." };
 }
+
+export async function addIssueComment(
+  organizationSlug: string,
+  issueId: string,
+  _previousState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const body = String(formData.get("body") ?? "").trim();
+  if (!body || body.length > 5000) {
+    return {
+      error: "Comment must contain between 1 and 5000 characters.",
+    };
+  }
+
+  const { supabase, user } = await getCurrentUser();
+  const { data: organization } = await supabase
+    .from("organizations")
+    .select("id")
+    .eq("slug", organizationSlug)
+    .maybeSingle();
+
+  if (!organization) {
+    return { error: "Organization not found or access was denied." };
+  }
+
+  const { data: issue } = await supabase
+    .from("issues")
+    .select("id, organization_id, project_id")
+    .eq("id", issueId)
+    .eq("organization_id", organization.id)
+    .maybeSingle();
+
+  if (!issue) {
+    return { error: "Issue not found in this organization." };
+  }
+
+  const { data: project } = await supabase
+    .from("projects")
+    .select("archived_at")
+    .eq("organization_id", organization.id)
+    .eq("id", issue.project_id)
+    .maybeSingle();
+
+  if (project?.archived_at) {
+    return { error: "Archived project issues are read-only." };
+  }
+
+  const { error } = await supabase.from("issue_comments").insert({
+    organization_id: organization.id,
+    issue_id: issue.id,
+    author_id: user.id,
+    body,
+  });
+
+  if (error) {
+    return { error: "We could not post that comment. Try again." };
+  }
+
+  revalidatePath(`/app/${organizationSlug}/issues/${issueId}`);
+  return { message: "Comment posted." };
+}
