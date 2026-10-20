@@ -22,7 +22,7 @@ export function OrganizationForm() {
       </div>
       <div>
         <label className="block text-sm font-medium" htmlFor="organization-slug">
-          URL slug
+          URL slug (optional)
         </label>
         <input
           className="mt-2 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"
@@ -31,6 +31,9 @@ export function OrganizationForm() {
           placeholder="team-name"
           pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
         />
+        <p className="mt-1 text-xs text-slate-400">
+          Leave blank to generate a slug from the organization name.
+        </p>
       </div>
       <button
         className="rounded-md bg-sky-400 px-4 py-2 font-semibold text-slate-950 disabled:opacity-60"

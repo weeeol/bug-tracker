@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createIssue, updateIssue } from "@/app/app/actions";
+import { addIssueComment, createIssue, updateIssue } from "@/app/app/actions";
 import { getServerSupabaseClient } from "@/lib/supabase/server";
 
 type SupabaseClientForTest = Awaited<ReturnType<typeof getServerSupabaseClient>>;
@@ -207,5 +207,53 @@ describe("issue server actions", () => {
       error: "Issue not found in this project.",
     });
     expect(issueIsolationScenario.updated).toBeUndefined();
+  });
+
+  it("creates comments only for an issue in the requested organization", async () => {
+    const scenario: Scenario = {
+      organization: { id: "org-1" },
+      project: { id: "project-1", organization_id: "org-1", archived_at: null },
+      issue: { id: "issue-1", project_id: "project-1", organization_id: "org-1" },
+      member: null,
+    };
+    vi.mocked(getServerSupabaseClient).mockResolvedValue(
+      createSupabaseMock(scenario),
+    );
+
+    const formData = new FormData();
+    formData.set("body", "This is safe plain text.");
+    const result = await addIssueComment("org-one", "issue-1", {}, formData);
+
+    expect(result).toEqual({ message: "Comment posted." });
+    expect(scenario.inserted).toMatchObject({
+      organization_id: "org-1",
+      issue_id: "issue-1",
+      author_id: "reporter-1",
+      body: "This is safe plain text.",
+    });
+
+    const isolatedScenario: Scenario = {
+      organization: { id: "org-1" },
+      project: null,
+      issue: null,
+      member: null,
+    };
+    vi.mocked(getServerSupabaseClient).mockResolvedValue(
+      createSupabaseMock(isolatedScenario),
+    );
+
+    const isolatedFormData = new FormData();
+    isolatedFormData.set("body", "Should not be visible across tenants.");
+    const isolatedResult = await addIssueComment(
+      "org-one",
+      "issue-from-another-org",
+      {},
+      isolatedFormData,
+    );
+
+    expect(isolatedResult).toEqual({
+      error: "Issue not found in this organization.",
+    });
+    expect(isolatedScenario.inserted).toBeUndefined();
   });
 });

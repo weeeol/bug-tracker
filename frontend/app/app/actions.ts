@@ -37,25 +37,26 @@ export async function createOrganization(
   formData: FormData,
 ): Promise<ActionState> {
   const name = String(formData.get("name") ?? "").trim();
-  const slug = toSlug(String(formData.get("slug") || name));
+  const requestedSlug = String(formData.get("slug") ?? "").trim();
+  const slug = toSlug(requestedSlug || name);
 
   if (name.length < 1 || name.length > 120 || !slug) {
     return { error: "Enter an organization name and a valid slug." };
   }
 
   const { supabase, user } = await getCurrentUser();
-  const { data, error } = await supabase
-    .from("organizations")
-    .insert({ name, slug, created_by: user.id })
-    .select("slug")
-    .single();
+  const { error } = await supabase.from("organizations").insert({
+    name,
+    slug,
+    created_by: user.id,
+  });
 
-  if (error || !data) {
+  if (error) {
     return { error: "We could not create that organization. Try another slug." };
   }
 
   revalidatePath("/app");
-  redirect(`/app/${data.slug}/projects`);
+  redirect(`/app/${slug}/projects`);
 }
 
 export async function createProject(
@@ -64,7 +65,8 @@ export async function createProject(
   formData: FormData,
 ): Promise<ActionState> {
   const name = String(formData.get("name") ?? "").trim();
-  const slug = toSlug(String(formData.get("slug") || name));
+  const requestedSlug = String(formData.get("slug") ?? "").trim();
+  const slug = toSlug(requestedSlug || name);
 
   if (name.length < 1 || name.length > 120 || !slug) {
     return { error: "Enter a project name and a valid slug." };
