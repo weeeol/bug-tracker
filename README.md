@@ -63,6 +63,23 @@ The repository root contains only project-level controls and entry points such a
 
 The setup below runs Supabase locally. It does not create or connect to a hosted Supabase project and does not deploy the application.
 
+## Docker
+
+Build and run the production frontend from the repository root:
+
+```powershell
+docker build -t bug-tracker .
+docker run --rm -p 3000:3000 `
+  -e NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co `
+  -e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key `
+  bug-tracker
+```
+
+The image contains the Next.js application only. Supabase Auth and PostgreSQL
+remain the backend service and must be provided by a local or hosted Supabase
+environment. Do not pass `SUPABASE_SERVICE_ROLE_KEY` to the browser-facing
+container unless a separately reviewed server-only deployment requires it.
+
 ## Local setup
 
 From a clean clone, start the local database:

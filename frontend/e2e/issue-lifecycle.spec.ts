@@ -24,6 +24,15 @@ test("signs in and completes the issue workflow", async ({ page }) => {
     new RegExp(`/app/${organizationName.toLowerCase().replaceAll(" ", "-")}/projects$`),
   );
 
+  const organizationUrl = `/app/${organizationName.toLowerCase().replaceAll(" ", "-")}`;
+  await page.goto(organizationUrl);
+  await expect(page.getByText("Solved")).toBeVisible();
+  await expect(page.getByText("In progress")).toBeVisible();
+  await expect(page.getByText("Unsolved")).toBeVisible();
+  await page.getByLabel("Theme").selectOption("retro");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "retro");
+
+  await page.goto(`${organizationUrl}/projects`);
   await page.getByLabel("Project name").fill(projectName);
   await page.getByRole("button", { name: "Create project" }).click();
   await expect(page.getByRole("link", { name: projectName })).toBeVisible();
