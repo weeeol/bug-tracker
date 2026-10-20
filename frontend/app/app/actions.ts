@@ -2,9 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { validateIssueInput, type IssueFieldErrors } from "@/lib/issue-validation";
 import { getServerSupabaseClient } from "@/lib/supabase/server";
 
-type ActionState = { error?: string; message?: string };
+export type ActionState = {
+  error?: string;
+  message?: string;
+  fieldErrors?: IssueFieldErrors;
+};
 
 function toSlug(value: string) {
   return value
@@ -150,4 +155,188 @@ export async function updateMemberRole(
     .eq("organization_id", organization.id)
     .eq("profile_id", profileId);
   revalidatePath(`/app/${organizationSlug}/projects`);
+}
+
+async function getOrganizationProject(
+  supabase: Awaited<ReturnType<typeof getServerSupabaseClient>>,
+  organizationSlug: string,
+  projectId: string,
+) {
+  const { data: organization } = await supabase
+    .from("organizations")
+    .select("id")
+    .eq("slug", organizationSlug)
+    .maybeSingle();
+
+  if (!organization) {
+    return { organization: null, project: null };
+  }
+
+  const { data: project } = await supabase
+    .from("projects")
+    .select("id, organization_id, archived_at")
+    .eq("organization_id", organization.id)
+    .eq("id", projectId)
+    .maybeSingle();
+
+  return { organization, project };
+}
+
+export async function createIssue(
+  organizationSlug: string,
+  projectId: string,
+  _previousState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const { supabase, user } = await getCurrentUser();
+  const { organization, project } = await getOrganizationProject(
+    supabase,
+    organizationSlug,
+    projectId,
+  );
+
+  if (!organization || !project) {
+    return { error: "Project not found or access was denied." };
+  }
+
+  if (project.archived_at) {
+    return { error: "The project is archived and cannot accept new issues." };
+  }
+
+  const issueInput = {
+    title: String(formData.get("title") ?? ""),
+    description: String(formData.get("description") ?? ""),
+    status: String(formData.get("status") ?? "open"),
+    priority: String(formData.get("priority") ?? "medium"),
+    assigneeId: String(formData.get("assigneeId") ?? "").trim() || null,
+  };
+
+  const validated = validateIssueInput(issueInput);
+  if (!validated.valid) {
+    return { error: validated.message, fieldErrors: validated.fieldErrors };
+  }
+
+  if (validated.assigneeId) {
+    const { data: member } = await supabase
+      .from("organization_members")
+      .select("profile_id")
+      .eq("organization_id", organization.id)
+      .eq("profile_id", validated.assigneeId)
+      .maybeSingle();
+
+    if (!member) {
+      return {
+        error: "Review the highlighted issue fields.",
+        fieldErrors: {
+          assigneeId: "Assignee must be a member of this organization.",
+        },
+      };
+    }
+  }
+
+  const { error } = await supabase.from("issues").insert({
+    organization_id: organization.id,
+    project_id: project.id,
+    reporter_id: user.id,
+    assignee_id: validated.assigneeId,
+    title: validated.title,
+    description: validated.description,
+    status: validated.status,
+    priority: validated.priority,
+  });
+
+  if (error) {
+    return { error: "We could not create that issue. Check the inputs and try again." };
+  }
+
+  revalidatePath(`/app/${organizationSlug}/projects/${projectId}`);
+  revalidatePath(`/app/${organizationSlug}/projects`);
+  return { message: "Issue created." };
+}
+
+export async function updateIssue(
+  organizationSlug: string,
+  projectId: string,
+  issueId: string,
+  _previousState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const { supabase } = await getCurrentUser();
+  const { organization, project } = await getOrganizationProject(
+    supabase,
+    organizationSlug,
+    projectId,
+  );
+
+  if (!organization || !project) {
+    return { error: "Project not found or access was denied." };
+  }
+
+  if (project.archived_at) {
+    return { error: "The project is archived and cannot be edited." };
+  }
+
+  const { data: issue } = await supabase
+    .from("issues")
+    .select("id, project_id, organization_id")
+    .eq("id", issueId)
+    .eq("organization_id", organization.id)
+    .eq("project_id", project.id)
+    .maybeSingle();
+
+  if (!issue) {
+    return { error: "Issue not found in this project." };
+  }
+
+  const issueInput = {
+    title: String(formData.get("title") ?? ""),
+    description: String(formData.get("description") ?? ""),
+    status: String(formData.get("status") ?? "open"),
+    priority: String(formData.get("priority") ?? "medium"),
+    assigneeId: String(formData.get("assigneeId") ?? "").trim() || null,
+  };
+
+  const validated = validateIssueInput(issueInput);
+  if (!validated.valid) {
+    return { error: validated.message, fieldErrors: validated.fieldErrors };
+  }
+
+  if (validated.assigneeId) {
+    const { data: member } = await supabase
+      .from("organization_members")
+      .select("profile_id")
+      .eq("organization_id", organization.id)
+      .eq("profile_id", validated.assigneeId)
+      .maybeSingle();
+
+    if (!member) {
+      return {
+        error: "Review the highlighted issue fields.",
+        fieldErrors: {
+          assigneeId: "Assignee must be a member of this organization.",
+        },
+      };
+    }
+  }
+
+  const { error } = await supabase
+    .from("issues")
+    .update({
+      title: validated.title,
+      description: validated.description,
+      status: validated.status,
+      priority: validated.priority,
+      assignee_id: validated.assigneeId,
+    })
+    .eq("id", issueId)
+    .eq("organization_id", organization.id)
+    .eq("project_id", project.id);
+
+  if (error) {
+    return { error: "We could not update the issue details." };
+  }
+
+  revalidatePath(`/app/${organizationSlug}/issues/${issueId}`);
+  revalidatePath(`/app/${organizationSlug}/projects/${projectId}`);
+  return { message: "Issue updated." };
 }
