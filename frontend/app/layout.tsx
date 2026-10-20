@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PageShell } from "@/components/page-shell";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,7 +16,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <PageShell>{children}</PageShell>
+        <ThemeProvider>
+          <PageShell>{children}</PageShell>
+        </ThemeProvider>
       </body>
     </html>
   );

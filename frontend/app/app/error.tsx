@@ -17,19 +17,19 @@ export default function AppError({
     <div className="mx-auto max-w-4xl px-6 py-16">
       <section
         role="alert"
-        className="rounded-xl border border-rose-400/40 bg-rose-950/30 p-6"
+        className="border border-[var(--danger)] bg-[var(--danger-surface)] p-6"
       >
-        <h1 className="text-xl font-semibold text-white">
+        <h1 className="text-xl font-bold">
           We could not load this workspace
         </h1>
-        <p className="mt-2 text-sm text-rose-100">
+        <p className="mt-2 text-sm text-[var(--muted)]">
           Something went wrong while loading the requested data. Please try
           again.
         </p>
         <button
           type="button"
           onClick={reset}
-          className="mt-4 rounded-md bg-sky-400 px-4 py-2 font-semibold text-slate-950"
+          className="mt-4 rounded bg-[var(--accent)] px-4 py-2 font-semibold text-[var(--page)]"
         >
           Try again
         </button>

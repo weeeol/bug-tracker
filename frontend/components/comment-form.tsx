@@ -16,9 +16,9 @@ export function CommentForm({
 
   return (
     <form action={formAction} className="space-y-3">
-      {state.error ? <p className="text-sm text-rose-300">{state.error}</p> : null}
+      {state.error ? <p className="text-sm text-[var(--danger)]">{state.error}</p> : null}
       {state.message ? (
-        <p className="text-sm text-emerald-300">{state.message}</p>
+        <p className="text-sm text-[var(--success)]">{state.message}</p>
       ) : null}
       <div>
         <label className="block text-sm font-medium" htmlFor="comment-body">
@@ -27,19 +27,19 @@ export function CommentForm({
         <textarea
           id="comment-body"
           name="body"
-          className="mt-2 min-h-24 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2"
+          className="mt-2 min-h-24 w-full rounded border border-[var(--line)] bg-[var(--page)] px-3 py-2"
           maxLength={5000}
           required
           aria-describedby="comment-body-help"
         />
-        <p id="comment-body-help" className="mt-1 text-xs text-slate-400">
+        <p id="comment-body-help" className="mt-1 text-xs text-[var(--muted)]">
           Plain text only, up to 5000 characters.
         </p>
       </div>
       <button
         type="submit"
         disabled={pending}
-        className="rounded-md bg-sky-400 px-4 py-2 font-semibold text-slate-950 disabled:opacity-60"
+        className="rounded bg-[var(--accent)] px-4 py-2 font-semibold text-[var(--page)] disabled:opacity-60"
       >
         {pending ? "Posting..." : "Post comment"}
       </button>

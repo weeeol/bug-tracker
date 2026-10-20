@@ -101,7 +101,7 @@ export default async function IssuePage({
         <StatePanel title="Project archived">
           This issue is in an archived project and is read-only.
           <div className="mt-4">
-            <Link className="text-sky-300 underline" href={`/app/${organizationSlug}/projects/${project.id}`}>
+            <Link className="text-[var(--accent)] underline" href={`/app/${organizationSlug}/projects/${project.id}`}>
               Back to project
             </Link>
           </div>
@@ -149,39 +149,39 @@ export default async function IssuePage({
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-16">
-      <p className="text-sm font-medium uppercase tracking-[0.2em] text-sky-300">
+      <p className="retro-detail text-sm font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
         {organizationSlug} / {project.slug} / issue
       </p>
       <h1 className="mt-3 text-4xl font-semibold text-white">{issue.title}</h1>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <section className="rounded-xl border border-slate-800 bg-slate-900 p-6">
+        <section className="border border-[var(--line)] bg-[var(--surface)] p-6">
           <h2 className="text-xl font-semibold">Issue overview</h2>
-          <dl className="mt-4 space-y-4 text-sm text-slate-300">
+          <dl className="mt-4 space-y-4 text-sm text-[var(--muted)]">
             <div>
-              <dt className="text-slate-400">Status</dt>
+              <dt className="text-[var(--muted)]">Status</dt>
               <dd className="mt-1 font-medium text-white">{issue.status.replace("_", " ")}</dd>
             </div>
             <div>
-              <dt className="text-slate-400">Priority</dt>
+              <dt className="text-[var(--muted)]">Priority</dt>
               <dd className="mt-1 font-medium text-white">{issue.priority}</dd>
             </div>
             <div>
-              <dt className="text-slate-400">Reporter</dt>
+              <dt className="text-[var(--muted)]">Reporter</dt>
               <dd className="mt-1 font-medium text-white">{reporterName}</dd>
             </div>
             <div>
-              <dt className="text-slate-400">Assignee</dt>
+              <dt className="text-[var(--muted)]">Assignee</dt>
               <dd className="mt-1 font-medium text-white">{assigneeName}</dd>
             </div>
             <div>
-              <dt className="text-slate-400">Created</dt>
+              <dt className="text-[var(--muted)]">Created</dt>
               <dd className="mt-1 font-medium text-white">
                 {new Date(issue.created_at).toLocaleString()}
               </dd>
             </div>
             <div>
-              <dt className="text-slate-400">Updated</dt>
+              <dt className="text-[var(--muted)]">Updated</dt>
               <dd className="mt-1 font-medium text-white">
                 {new Date(issue.updated_at).toLocaleString()}
               </dd>
@@ -189,13 +189,13 @@ export default async function IssuePage({
           </dl>
         </section>
 
-        <section className="rounded-xl border border-slate-800 bg-slate-900 p-6">
+        <section className="border border-[var(--line)] bg-[var(--surface)] p-6">
           <h2 className="text-xl font-semibold">Description</h2>
-          <div className="mt-4 whitespace-pre-wrap text-slate-300">
+          <div className="mt-4 whitespace-pre-wrap text-[var(--muted)]">
             {issue.description || "No description provided."}
           </div>
 
-          <div className="mt-8 border-t border-slate-800 pt-6">
+          <div className="mt-8 border-t border-[var(--line)] pt-6">
             <h3 className="text-lg font-semibold">Edit issue</h3>
             <div className="mt-4">
               <IssueForm
@@ -215,7 +215,7 @@ export default async function IssuePage({
             </div>
           </div>
 
-          <div className="mt-8 border-t border-slate-800 pt-6">
+          <div className="mt-8 border-t border-[var(--line)] pt-6">
             <h3 className="text-lg font-semibold">Discussion</h3>
             {commentsError ? (
               <StatePanel title="Could not load comments" tone="error">
@@ -224,9 +224,9 @@ export default async function IssuePage({
             ) : comments?.length ? (
               <ol className="mt-4 space-y-4">
                 {comments.map((comment) => (
-                  <li key={comment.id} className="rounded-lg border border-slate-800 p-4">
-                    <p className="whitespace-pre-wrap text-sm text-slate-300">{comment.body}</p>
-                    <p className="mt-2 text-xs text-slate-400">
+                  <li key={comment.id} className="border border-[var(--line)] p-4">
+                    <p className="whitespace-pre-wrap text-sm text-[var(--muted)]">{comment.body}</p>
+                    <p className="mt-2 text-xs text-[var(--muted)]">
                       {memberMap.get(comment.author_id) ?? comment.author_id} ·{" "}
                       {new Date(comment.created_at).toLocaleString()}
                     </p>
@@ -234,7 +234,7 @@ export default async function IssuePage({
                 ))}
               </ol>
             ) : (
-              <p className="mt-4 text-sm text-slate-400">No comments yet.</p>
+              <p className="mt-4 text-sm text-[var(--muted)]">No comments yet.</p>
             )}
             <div className="mt-6">
               <CommentForm action={addIssueComment.bind(null, organizationSlug, issue.id)} />
