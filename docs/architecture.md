@@ -29,7 +29,7 @@ Use the Supabase publishable/anon key only in the browser. Keep the service-role
 | `issues` | Reported defect | belongs to project; optional assignee profile |
 | `issue_comments` | Issue discussion | belongs to issue and author profile |
 
-All business tables receive UUID primary keys, `created_at`, and `updated_at`. Issue status and priority use constrained PostgreSQL enums or check constraints selected in TASK-002. The migration must add indexes for foreign keys and common list filters.
+All business tables receive UUID primary keys, `created_at`, and `updated_at`. Issue status and priority use constrained PostgreSQL enums or check constraints defined by the initial schema migration. The migration must add indexes for foreign keys and common list filters.
 
 ## Authorization rules
 

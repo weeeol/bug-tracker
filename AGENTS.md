@@ -2,8 +2,8 @@
 
 ## Scope and workflow
 
-- Read `docs/tasks/MASTER-TASK.md` before changing application code.
-- Execute exactly one task document at a time. Do not combine tasks or make drive-by refactors.
+- Read the product and architecture documentation before changing application code.
+- Keep changes within the user's requested scope and avoid drive-by refactors.
 - Stop after completing a task and report: changed files, verification results, assumptions, and recommended commit message.
 - Do not create a remote repository, deploy, modify Supabase cloud resources, or expose secrets unless the user explicitly asks.
 
@@ -11,7 +11,7 @@
 
 - Product scope: `docs/product-brief.md`
 - Architecture and security decisions: `docs/architecture.md`
-- Ordered work: `docs/tasks/MASTER-TASK.md`
+- Current implementation and public usage: `README.md`
 
 If a task conflicts with these documents, pause and ask for a decision rather than silently changing the design.
 
