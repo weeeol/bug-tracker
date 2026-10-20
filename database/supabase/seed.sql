@@ -43,6 +43,20 @@ values
   )
 on conflict (id) do nothing;
 
+update auth.users
+set
+  email_change = '',
+  phone_change = '',
+  email_change_token_new = '',
+  phone_change_token = '',
+  email_change_confirm_status = 0
+where id in (
+  '00000000-0000-0000-0000-000000000001',
+  '00000000-0000-0000-0000-000000000002',
+  '00000000-0000-0000-0000-000000000003',
+  '00000000-0000-0000-0000-000000000004'
+);
+
 insert into public.profiles (id, display_name)
 values
   ('00000000-0000-0000-0000-000000000001', 'Ada Lovelace'),

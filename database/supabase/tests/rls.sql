@@ -14,7 +14,10 @@ declare
   visible_organizations integer;
   visible_issues integer;
   created_project_id uuid;
+  visible_comments integer;
   invalid_assignee_rejected boolean := false;
+  cross_tenant_issue_denied boolean := false;
+  cross_tenant_comment_denied boolean := false;
 begin
   select count(*) into visible_organizations from public.organizations;
   if visible_organizations <> 1 then
@@ -24,6 +27,11 @@ begin
   select count(*) into visible_issues from public.issues;
   if visible_issues <> 1 then
     raise exception 'cross-organization issue read failed: expected 1 issue, got %', visible_issues;
+  end if;
+
+  select count(*) into visible_comments from public.issue_comments;
+  if visible_comments <> 1 then
+    raise exception 'cross-organization comment read failed: expected 1 comment, got %', visible_comments;
   end if;
 
   insert into public.projects (organization_id, name, slug, created_by)
@@ -66,6 +74,54 @@ begin
   if not invalid_assignee_rejected then
     raise exception 'cross-organization assignee was not rejected';
   end if;
+
+  begin
+    insert into public.issues (
+      organization_id, project_id, reporter_id, title
+    )
+    values (
+      '10000000-0000-0000-0000-000000000002',
+      '20000000-0000-0000-0000-000000000002',
+      '00000000-0000-0000-0000-000000000001',
+      'Cross-organization issue write'
+    );
+  exception
+    when insufficient_privilege then
+      cross_tenant_issue_denied := true;
+  end;
+
+  if not cross_tenant_issue_denied then
+    raise exception 'cross-organization issue insert was not denied';
+  end if;
+
+  begin
+    insert into public.issue_comments (
+      organization_id, issue_id, author_id, body
+    )
+    values (
+      '10000000-0000-0000-0000-000000000002',
+      '30000000-0000-0000-0000-000000000002',
+      '00000000-0000-0000-0000-000000000001',
+      'Cross-organization comment write'
+    );
+  exception
+    when insufficient_privilege then
+      cross_tenant_comment_denied := true;
+  end;
+
+  if not cross_tenant_comment_denied then
+    raise exception 'cross-organization comment insert was not denied';
+  end if;
+
+  insert into public.issue_comments (
+    organization_id, issue_id, author_id, body
+  )
+  values (
+    '10000000-0000-0000-0000-000000000001',
+    '30000000-0000-0000-0000-000000000001',
+    '00000000-0000-0000-0000-000000000001',
+    'Tenant-scoped comment write'
+  );
 end;
 $$;
 
